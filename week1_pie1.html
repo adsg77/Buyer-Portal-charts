@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+      google.charts.load("current", { packages: ["corechart"] });
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        const data = google.visualization.arrayToDataTable([
+          ["City", "Count"],
+          ["Riyadh", 4],
+          ["Jeddah", 6],
+          ["Dammam", 8],
+          ["Jubail", 2],
+          ["Arar", 3],
+          ["Other", 2],
+        ]);
+
+        const options = {
+          title: "Week 1",
+          is3D: true,
+          backgroundColor: "#000000", // black background
+          titleTextStyle: { color: "#FFFFFF", fontSize: 18 }, // smaller white title
+          legend: { position: "bottom", textStyle: { color: "#FFFFFF" } }, // white legend at bottom
+          pieSliceText: "percentage", // show % instead of numbers
+          tooltip: { text: "value" },
+          colors: ["#34A853", "#F4B400", "#4285F4", "#FABB05", "#0F9D58", "#AECBFA"], // green, yellow, blue palette
+          chartArea: { width: "70%", height: "70%" }, // smaller chart size
+        };
+
+        const chart = new google.visualization.PieChart(
+          document.getElementById("piechart_3d")
+        );
+        chart.draw(data, options);
+
+        // Make slices clickable
+        google.visualization.events.addListener(chart, "select", function () {
+          const sel = chart.getSelection();
+          if (!sel.length) return;
+          const row = sel[0].row;
+          const city = data.getValue(row, 0);
+          const url = links[city];
+          if (url) window.open(url, "_blank");
+        });
+
+        // Redraw on resize
+        window.addEventListener("resize", () => chart.draw(data, options));
+      }
+    </script>
+  </head>
+  <body style="background-color:black; margin:0;">
+    <div id="piechart_3d" style="width: 700px; height: 400px; margin:auto;"></div>
+  </body>
+</html>
