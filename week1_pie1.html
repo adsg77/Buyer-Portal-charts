@@ -2,6 +2,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <!-- Load Rubik font -->
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/charts/loader.js"></script>
     <script>
       google.charts.load("current", { packages: ["corechart"] });
@@ -18,24 +20,36 @@
           ["Other", 2],
         ]);
 
+        const links = {
+          Riyadh: "https://your-notion-link/riyadh",
+          Jeddah: "https://your-notion-link/jeddah",
+          Dammam: "https://your-notion-link/dammam",
+          Jubail: "https://your-notion-link/jubail",
+          Arar: "https://your-notion-link/arar",
+          Other: "https://your-notion-link/other",
+        };
+
         const options = {
-          title: "Week 1",
-          is3D: true,
-          backgroundColor: "#000000", // black background
-          titleTextStyle: { color: "#FFFFFF", fontSize: 18 }, // smaller white title
-          legend: { position: "bottom", textStyle: { color: "#FFFFFF" } }, // white legend at bottom
-          pieSliceText: "percentage", // show % instead of numbers
+          pieHole: 0.5, // donut chart
+          backgroundColor: "#191919",
+          legend: { position: "bottom", textStyle: { color: "#FFFFFF", fontName: "Rubik", fontSize: 13 } },
+          pieSliceText: "percentage",
+          pieSliceTextStyle: { fontName: "Rubik", fontSize: 12, color: "#FFFFFF" },
           tooltip: { text: "value" },
-          colors: ["#34A853", "#F4B400", "#4285F4", "#FABB05", "#0F9D58", "#AECBFA"], // green, yellow, blue palette
-          chartArea: { width: "70%", height: "70%" }, // smaller chart size
+          colors: ["#34A853", "#F4B400", "#4285F4", "#FABB05", "#0F9D58", "#AECBFA"],
+          chartArea: { width: "70%", height: "70%" }
         };
 
         const chart = new google.visualization.PieChart(
-          document.getElementById("piechart_3d")
+          document.getElementById("piechart")
         );
         chart.draw(data, options);
 
-        // Make slices clickable
+        // Add title inside donut
+        const textDiv = document.getElementById("chart-title");
+        textDiv.innerHTML = "Week 1";
+
+        // Slice click links
         google.visualization.events.addListener(chart, "select", function () {
           const sel = chart.getSelection();
           if (!sel.length) return;
@@ -49,8 +63,43 @@
         window.addEventListener("resize", () => chart.draw(data, options));
       }
     </script>
+    <style>
+      body {
+        background-color: #191919;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+        font-family: 'Rubik', sans-serif;
+      }
+      #piechart {
+        position: relative;
+        width: 700px;
+        height: 400px;
+      }
+      #chart-title {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        font-size: 22px;
+        font-weight: 500;
+        font-family: 'Rubik', sans-serif;
+        pointer-events: none;
+      }
+      .chart-container {
+        position: relative;
+        display: inline-block;
+      }
+    </style>
   </head>
-  <body style="background-color:black; margin:0;">
-    <div id="piechart_3d" style="width: 700px; height: 400px; margin:auto;"></div>
+  <body>
+    <div class="chart-container">
+      <div id="piechart"></div>
+      <div id="chart-title"></div>
+    </div>
   </body>
 </html>
