@@ -24,11 +24,23 @@
         width: 100%;
         height: 100%;
       }
+      #chart-title {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 500;
+        font-family: 'DM Sans', sans-serif;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
     <div class="chart-container">
       <div id="chart"></div>
+      <div id="chart-title">Week 1</div>
     </div>
 
     <script>
@@ -48,16 +60,19 @@
 
         const options = {
           backgroundColor: "#191919",
+          pieHole: 0.55, // donut
           legend: {
             position: "bottom",
             textStyle: { color: "#DDDDDD", fontName: "DM Sans", fontSize: 13 }
           },
-          // Show percentages on slices
-          pieSliceText: "percentage",
+          // Show numbers on slices
+          pieSliceText: "value",
           pieSliceTextStyle: { fontName: "DM Sans", fontSize: 12, color: "#FFFFFF" },
-          tooltip: { text: "value" }, // Tooltip shows raw numbers
+          // Show percentages only on hover
+          tooltip: { text: "percentage" },
           chartArea: { width: "80%", height: "70%" },
-          colors: ["#4CAF70", "#E8C547", "#5C8DFF", "#A7A9BE", "#6C757D", "#CED4DA"],
+          // Softer, distinct colors
+          colors: ["#6DC36D", "#F2C94C", "#5C8DFF", "#9B51E0", "#EB5757", "#828282"],
           pieSliceBorderColor: "#191919"
         };
 
