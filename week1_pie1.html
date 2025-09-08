@@ -1,10 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <!-- Load Rubik font -->
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500&display=swap" rel="stylesheet">
+    <!-- DM Sans Medium -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+      body {
+        background-color: #191919;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: 'DM Sans', sans-serif;
+      }
+      .chart-container {
+        position: relative;
+        width: 600px;
+        height: 360px;
+      }
+      #chart {
+        width: 100%;
+        height: 100%;
+      }
+      #chart-title {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        font-size: 18px;
+        font-weight: 500;
+        font-family: 'DM Sans', sans-serif;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chart-container">
+      <div id="chart"></div>
+      <div id="chart-title">Week 1</div>
+    </div>
+
     <script>
       google.charts.load("current", { packages: ["corechart"] });
       google.charts.setOnLoadCallback(drawChart);
@@ -21,78 +59,25 @@
         ]);
 
         const options = {
-          pieHole: 0.5, // donut chart
           backgroundColor: "#191919",
-          legend: { position: "bottom", textStyle: { color: "#FFFFFF", fontName: "Rubik", fontSize: 13 } },
-          pieSliceText: "percentage",
-          pieSliceTextStyle: { fontName: "Rubik", fontSize: 12, color: "#FFFFFF" },
-          tooltip: { text: "value" },
-          colors: ["#34A853", "#F4B400", "#4285F4", "#FABB05", "#0F9D58", "#AECBFA"],
-          chartArea: { width: "70%", height: "70%" }
+          pieHole: 0.55,
+          legend: {
+            position: "bottom",
+            textStyle: { color: "#DDDDDD", fontName: "DM Sans", fontSize: 13 }
+          },
+          // Show numbers on slices
+          pieSliceText: "value",
+          pieSliceTextStyle: { fontName: "DM Sans", fontSize: 12, color: "#FFFFFF" },
+          // Show percentages only on hover
+          tooltip: { text: "percentage" },
+          chartArea: { width: "80%", height: "70%" },
+          colors: ["#4CAF70", "#E8C547", "#5C8DFF", "#A7A9BE", "#6C757D", "#CED4DA"],
+          pieSliceBorderColor: "#191919"
         };
 
-        const chart = new google.visualization.PieChart(
-          document.getElementById("piechart")
-        );
+        const chart = new google.visualization.PieChart(document.getElementById("chart"));
         chart.draw(data, options);
-
-        // Add title inside donut
-        const textDiv = document.getElementById("chart-title");
-        textDiv.innerHTML = "Week 1";
-
-        // Slice click links
-        google.visualization.events.addListener(chart, "select", function () {
-          const sel = chart.getSelection();
-          if (!sel.length) return;
-          const row = sel[0].row;
-          const city = data.getValue(row, 0);
-          const url = links[city];
-          if (url) window.open(url, "_blank");
-        });
-
-        // Redraw on resize
-        window.addEventListener("resize", () => chart.draw(data, options));
       }
     </script>
-    <style>
-      body {
-        background-color: #191919;
-        margin: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        flex-direction: column;
-        font-family: 'Rubik', sans-serif;
-      }
-      #piechart {
-        position: relative;
-        width: 700px;
-        height: 400px;
-      }
-      #chart-title {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: #ffffff;
-        font-size: 22px;
-        font-weight: 500;
-        font-family: 'Rubik', sans-serif;
-        pointer-events: none;
-      }
-      .chart-container {
-        position: relative;
-        display: inline-block;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="chart-container">
-      <div id="piechart"></div>
-      <div id="chart-title"></div>
-    </div>
   </body>
 </html>
-
-
