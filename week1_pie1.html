@@ -35,7 +35,7 @@
     const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
 
     // Category order: North, South, West, East, Center, then extra "Anywhere in Riyadh"
-    const categories = ['North','South','West','East','Center','Anywhere in Riyadh'];
+    const categories = ['North','South','West','East','Center','Anywhere'];
 
     // Colors (legend ⟷ bars 1:1)
     const colorMap = {
@@ -152,4 +152,5 @@
   </script>
 </body>
 </html>
+
 
