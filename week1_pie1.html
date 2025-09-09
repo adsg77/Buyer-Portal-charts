@@ -6,115 +6,121 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
-    :root { --bg:#191919; --fg:#e8e8e8; --grid:#2a2a2a; }
-    html, body {
-      height: 100%; margin: 0; background: var(--bg);
-      font-family: 'DM Sans', system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+    body {
+      background-color: #191919;
+      margin: 0;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
     }
-    .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
-    .box  { width:100%; max-width: 760px; }
-    .title { color:#fff; font-size:18px; font-weight:500; margin:0 0 10px 6px; }
-    #chart { width:100%; height:420px; }
-    /* Tooltip base (Google injects our HTML; we style inline in JS too) */
+    h2 {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    #chart {
+      width: 700px;
+      height: 400px;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="box">
-      <div class="title">Week 1</div>
-      <div id="chart"></div>
-    </div>
-  </div>
+  <h2>Week 1</h2>
+  <div id="chart"></div>
 
   <script>
-    google.charts.load('current', {packages:['corechart']});
-    google.charts.setOnLoadCallback(init);
+    google.charts.load("current", { packages: ["corechart"] });
+    google.charts.setOnLoadCallback(drawChart);
 
-    function init() {
-      // ---------- DATA (edit values here) ----------
-      // city,  North, South, East, West
-      const rows = [
-        ['Riyadh',  6, 3, 2, 1],  // total 12
-        ['Jeddah',  5, 2, 3, 2],
-        ['Dammam',  7, 1, 3, 2],
-        ['Jubail',  2, 1, 1, 0'],
-        ['Arar',    1, 1, 1, 0],
+    function drawChart() {
+      // city, North, South, East, West
+      const rawData = [
+        ["Riyadh", 6, 3, 2, 1],
+        ["Jeddah", 5, 2, 3, 2],
+        ["Dammam", 7, 1, 3, 2],
+        ["Jubail", 2, 1, 1, 0],
+        ["Arar",   1, 1, 1, 0]
       ];
 
-      const dirs   = ['North','South','East','West'];
-      const colors = ['#78C889', '#6FA8FF', '#E6C45A', '#F07A7A']; // soft + distinct
+      // Colors for North/South/East/West
+      const colors = ["#78C889", "#6FA8FF", "#E6C45A", "#F07A7A"];
 
-      // Build DataTable with value+tooltip columns, then a total annotation column
-      const dt = new google.visualization.DataTable();
-      dt.addColumn('string', 'City');
-      // value columns
-      dirs.forEach(()=> dt.addColumn('number', ''));
-      // tooltip columns (HTML)
-      dirs.forEach(()=> dt.addColumn({type:'string', role:'tooltip', p:{html:true}}));
+      // Build DataTable with HTML tooltips
+      const data = new google.visualization.DataTable();
+      data.addColumn("string", "City");
+      data.addColumn("number", "North");
+      data.addColumn({ type: "string", role: "tooltip", p: { html: true } });
+      data.addColumn("number", "South");
+      data.addColumn({ type: "string", role: "tooltip", p: { html: true } });
+      data.addColumn("number", "East");
+      data.addColumn({ type: "string", role: "tooltip", p: { html: true } });
+      data.addColumn("number", "West");
+      data.addColumn({ type: "string", role: "tooltip", p: { html: true } });
+      data.addColumn({ type: "string", role: "annotation" }); // total annotation
 
-      rows.forEach(r => {
-        const city = r[0];
-        const vals = r.slice(1);
-        const total = Math.max(1, vals.reduce((a,b)=>a+b,0));
-        const tips = vals.map((v, i) => {
-          const pct = ((v/total)*100).toFixed(1);
-          // Elegant dark tooltip with mini color chip
-          return `
-            <div style="padding:10px 12px;background:#1F1F1F;border:1px solid #2C2C2C;border-radius:10px;color:#fff;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                <span style="width:10px;height:10px;border-radius:3px;background:${colors[i]};display:inline-block;"></span>
-                <strong>${city} — ${dirs[i]}</strong>
-              </div>
-              <div style="opacity:.95;font-size:13px;">${v} of ${total}</div>
-              <div style="opacity:.8;font-size:12px;">${pct}% of city</div>
-            </div>`;
-        });
+      rawData.forEach(row => {
+        const [city, n, s, e, w] = row;
+        const total = n + s + e + w;
 
-        dt.addRow([city, vals[0], vals[1], vals[2], vals[3], tips[0], tips[1], tips[2], tips[3]]);
+        const makeTooltip = (label, value, color) => `
+          <div style="padding:8px 10px;background:#1f1f1f;border:1px solid #2c2c2c;border-radius:8px;color:#fff;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${color};"></span>
+              <strong>${city} – ${label}</strong>
+            </div>
+            <div>${value} of ${total}</div>
+            <div style="opacity:.8;">${((value/total)*100).toFixed(1)}%</div>
+          </div>
+        `;
+
+        data.addRow([
+          city,
+          n, makeTooltip("North", n, colors[0]),
+          s, makeTooltip("South", s, colors[1]),
+          e, makeTooltip("East",  e, colors[2]),
+          w, makeTooltip("West",  w, colors[3]),
+          String(total) // annotation
+        ]);
       });
 
-      // View: include all columns + computed total annotation at end
-      const viewCols = [0,1,5,2,6,3,7,4,8, {
-        calc: function (d, row) {
-          const total = d.getValue(row,1) + d.getValue(row,2) + d.getValue(row,3) + d.getValue(row,4);
-          return String(total);
-        },
-        type: 'string',
-        role: 'annotation'
-      }];
-      const view = new google.visualization.DataView(dt);
-      view.setColumns(viewCols);
-
       const options = {
-        backgroundColor: '#191919',
+        backgroundColor: "#191919",
         isStacked: true,
-        animation: { startup:true, duration: 900, easing: 'out' },
-        legend: { position: 'top', textStyle: { color:'#dddddd', fontName:'DM Sans', fontSize:13 } },
-        focusTarget: 'category',
-        tooltip: { isHtml: true }, // use our modern HTML tooltips
+        animation: { startup: true, duration: 900, easing: "out" },
+        legend: {
+          position: "top",
+          textStyle: { color: "#DDDDDD", fontName: "DM Sans", fontSize: 13 }
+        },
+        tooltip: { isHtml: true },
         vAxis: {
-          title: 'Requests',
-          textStyle: { color:'#cfcfcf', fontName:'DM Sans' },
-          titleTextStyle: { color:'#ffffff', fontSize:12, fontName:'DM Sans' },
-          gridlines: { color:'#2a2a2a' },
-          baselineColor: '#2a2a2a',
+          title: "Requests",
+          textStyle: { color: "#CCCCCC", fontName: "DM Sans" },
+          titleTextStyle: { color: "#FFFFFF", fontSize: 12, fontName: "DM Sans" },
+          gridlines: { color: "#2a2a2a" },
+          baselineColor: "#2a2a2a",
           viewWindow: { min: 0 }
         },
-        hAxis: { textStyle: { color:'#dddddd', fontName:'DM Sans' } },
-        chartArea: { left:'10%', top:'8%', width:'82%', height:'75%' },
-        colors: colors, // N, S, E, W
-        bar: { groupWidth: '58%' },
+        hAxis: {
+          textStyle: { color: "#DDDDDD", fontName: "DM Sans" }
+        },
+        chartArea: { left: "10%", top: "10%", width: "80%", height: "70%" },
+        colors: colors,
+        bar: { groupWidth: "60%" },
         annotations: {
-          textStyle: { color:'#ffffff', fontName:'DM Sans', fontSize:12 },
-          alwaysOutside: true, // keep totals above stacks
+          textStyle: { color: "#FFFFFF", fontName: "DM Sans", fontSize: 12 },
+          alwaysOutside: true
         }
       };
 
-      const chart = new google.visualization.ColumnChart(document.getElementById('chart'));
-      chart.draw(view, options);
+      const chart = new google.visualization.ColumnChart(document.getElementById("chart"));
+      chart.draw(data, options);
 
-      // Responsive redraw
-      window.addEventListener('resize', () => chart.draw(view, options));
+      // Redraw on resize
+      window.addEventListener("resize", () => chart.draw(data, options));
     }
   </script>
 </body>
