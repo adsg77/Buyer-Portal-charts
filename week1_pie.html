@@ -35,7 +35,7 @@
     const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
 
     // Legend order you asked for
-    const categories = ['North','South','West','East','Center','Anywhere in Riyadh'];
+    const categories = ['North','South','West','East','Center','Anywhere'];
 
     // Colors mapped 1:1 with legend & series
     const colorMap = {
@@ -44,7 +44,7 @@
       'West':               '#F07A7A', // soft red
       'East':               '#E6C45A', // soft yellow
       'Center':             '#4EC7CC', // soft teal
-      'Anywhere in Riyadh': '#9B51E0'  // soft purple
+      'Anywhere': '#9B51E0'  // soft purple
     };
 
     // Identify top non-zero segment per city (for rounded caps)
@@ -151,3 +151,4 @@
   </script>
 </body>
 </html>
+
