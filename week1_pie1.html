@@ -10,8 +10,8 @@
     :root { --bg:#191919; }
     html, body { height:100%; margin:0; background:var(--bg); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
     .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
-    .box  { width:100%; max-width:660px; }                 /* a bit smaller */
-    #chart { width:100%; height:340px; }                   /* a bit smaller */
+    .box  { width:100%; max-width:650px; }           /* smaller */
+    #chart { width:100%; height:340px; }             /* smaller */
   </style>
 </head>
 <body>
@@ -22,7 +22,7 @@
   </div>
 
   <script>
-    // Data: [City, North, South, East, West]
+    // ---- Data: [City, North, South, East, West] ----
     const rows = [
       ['Riyadh', 6, 3, 2, 1],
       ['Jeddah', 5, 2, 3, 2],
@@ -30,7 +30,6 @@
       ['Jubail', 2, 1, 1, 0],
       ['Arar',   1, 1, 1, 0],
     ];
-
     const cities = rows.map(r=>r[0]);
     const north  = rows.map(r=>r[1]);
     const south  = rows.map(r=>r[2]);
@@ -44,30 +43,26 @@
     const el = document.getElementById('chart');
     const chart = echarts.init(el, null, { renderer:'canvas' });
 
+    // base style for stacked bars
     const baseBar = {
       type: 'bar',
       stack: 'total',
       barWidth: 22,
-      itemStyle: { borderRadius: [4,4,0,0], opacity: 0.85 },
-      emphasis: {                       // highlight ONLY the hovered item
-        focus: 'self',
-        itemStyle: { opacity: 1, shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.45)' }
-      },
-      blur: {                            // gently dim non-hovered items
-        itemStyle: { opacity: 0.25 }
-      }
+      itemStyle: { borderRadius: 0, opacity: 0.9, borderColor: 'transparent' },
+      emphasis: { focus: 'self', itemStyle: { opacity: 1, shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.45)' } },
+      blur: { itemStyle: { opacity: 0.25 } }
     };
 
     const option = {
       backgroundColor:'#191919',
       title: { text:'Week 1', left:'center', top:6, textStyle:{ color:'#fff', fontFamily:'DM Sans', fontWeight:500, fontSize:18 }},
-      grid: { left:'8%', right:'6%', top:50, bottom:48 },
       legend: {
         data:['North','South','East','West'],
-        top:10,
+        top:34,                                   // moved down so it doesn't hit the title
         textStyle:{ color:'#dddddd', fontFamily:'DM Sans', fontSize:12 },
         itemWidth:14, itemHeight:8
       },
+      grid: { left:'8%', right:'6%', top:70, bottom:48 },  // more top room for title+legend
       xAxis: {
         type:'category', data:cities,
         axisLabel:{ color:'#dddddd', fontFamily:'DM Sans' },
@@ -77,43 +72,53 @@
         type:'value', name:'Requests',
         nameTextStyle:{ color:'#ffffff', fontFamily:'DM Sans', fontSize:12 },
         axisLabel:{ color:'#cccccc', fontFamily:'DM Sans' },
-        splitLine:{ lineStyle:{ color:'#2a2a2a' } },
-        axisLine:{ show:false }, axisTick:{ show:false }
+        splitLine:{ lineStyle:{ color:'#2a2a2a' } }, axisLine:{ show:false }, axisTick:{ show:false }
       },
       tooltip: {
-        trigger:'item',                   // only the hovered segment
+        trigger:'item',                     // only hovered segment
         axisPointer:{ type:'none' },
         backgroundColor:'#1f1f1f',
         borderColor:'#2c2c2c', borderWidth:1,
         textStyle:{ color:'#ffffff', fontFamily:'DM Sans' },
         formatter: p => `${p.name} — ${p.seriesName}<br/><b>${p.value}</b>`
       },
-      animationDuration: 900, animationEasing: 'quartOut',
+      animationDuration: 800, animationEasing: 'quartOut',
       series: [
-        { ...baseBar, name:'North', data:north, itemStyle:{ ...baseBar.itemStyle, color:colors.North } },
-        { ...baseBar, name:'South', data:south, itemStyle:{ ...baseBar.itemStyle, color:colors.South } },
-        { ...baseBar, name:'East',  data:east,  itemStyle:{ ...baseBar.itemStyle, color:colors.East  } },
-        { ...baseBar, name:'West',  data:west,  itemStyle:{ ...baseBar.itemStyle, color:colors.West  } },
+        // bottom → top order; only the TOP gets rounded corners so stacks align cleanly
+        { ...baseBar, name:'North', data:north, itemStyle:{ ...baseBar.itemStyle, color:colors.North, borderRadius:0 } },
+        { ...baseBar, name:'South', data:south, itemStyle:{ ...baseBar.itemStyle, color:colors.South, borderRadius:0 } },
+        { ...baseBar, name:'East',  data:east,  itemStyle:{ ...baseBar.itemStyle, color:colors.East,  borderRadius:0 } },
+        { ...baseBar, name:'West',  data:west,  itemStyle:{ ...baseBar.itemStyle, color:colors.West,  borderRadius:[6,6,0,0] } },
 
-        // Clean totals above each column (pill labels)
+        // Perfectly centered total labels using a custom series
         {
-          name:'TotalsOverlay',
-          type:'bar',
-          data: totals,
-          stack:'__overlay__',
-          barWidth: 1,
-          barGap:'-100%',
+          name: 'TotalLabels',
+          type: 'custom',
           silent: true,
-          itemStyle: { color:'transparent' },
-          label: {
-            show:true, position:'top', distance:6,
-            formatter: p => totals[p.dataIndex],
-            color:'#ffffff', fontFamily:'DM Sans', fontSize:12,
-            backgroundColor:'rgba(0,0,0,0.55)',
-            padding:[2,6], borderRadius:6
+          renderItem: function (params, api) {
+            const idx = params.dataIndex;
+            const xVal = cities[idx];
+            const yVal = totals[idx];
+            const point = api.coord([xVal, yVal]);      // top of stack for this city
+            return {
+              type: 'text',
+              x: point[0],
+              y: point[1] - 8,
+              style: {
+                text: String(yVal),
+                textAlign: 'center',
+                textVerticalAlign: 'bottom',
+                fill: '#ffffff',
+                fontFamily: 'DM Sans',
+                fontSize: 12,
+                backgroundColor: 'rgba(0,0,0,0.55)',
+                padding: [2,6],
+                borderRadius: 8
+              },
+              z: 20
+            };
           },
-          tooltip: { show:false },
-          z: 20
+          data: totals.map((t, i) => ({ value: [cities[i], t] }))
         }
       ]
     };
