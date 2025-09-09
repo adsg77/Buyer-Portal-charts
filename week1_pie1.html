@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="color-scheme" content="dark">
   <title>Week 2 – Stacked Bars</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
     :root { --bg:#191919; }
     html, body { height:100%; margin:0; background:var(--bg); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
     .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
-    .box  { width:100%; max-width:650px; }   /* compact */
-    #chart { width:100%; height:340px; }     /* compact */
+    .box  { width:100%; max-width:650px; }
+    #chart { width:100%; height:340px; }
   </style>
 </head>
 <body>
@@ -22,124 +22,142 @@
   </div>
 
   <script>
-    // ---------------- DATA (Week 2) ----------------
-    // City totals:
-    // Riyadh: 13 (West 6, North 6, Anywhere 1)
-    // Dammam: 10 (East 4, North 6)
-    // Arar:    1 (West 1)
+    // ---------- Week 2 data (keep categories fixed for consistency) ----------
+    // For each city, include all 5 categories (zeros allowed).
     const rows = [
-      ['Riyadh',  {north:6, east:0, west:6, anywhere:1}],
-      ['Dammam',  {north:6, east:4, west:0, anywhere:0}],
-      ['Arar',    {north:0, east:0, west:1, anywhere:0}],
+      // city,                 North, East, West, Anywhere, Center
+      ['Riyadh',               6,     0,    6,    1,        0],
+      ['Dammam',               6,     4,    0,    0,        0],
+      ['Arar',                 0,     0,    1,    0,        0],
     ];
 
-    const cities = rows.map(r=>r[0]);
-    const north  = rows.map(r=>r[1].north);
-    const east   = rows.map(r=>r[1].east);
-    const west   = rows.map(r=>r[1].west);
-    const anywhere = rows.map(r=>r[1].anywhere);
-    const totals = rows.map(r => Object.values(r[1]).reduce((a,b)=>a+b,0));
-
-    // Palette (soft, distinct, dark-theme friendly)
+    const categories = ['North','East','West','Anywhere in Riyadh','Center'];
     const colors = {
-      North:    '#78C889', // soft green
-      East:     '#E6C45A', // soft yellow
-      West:     '#F07A7A', // soft red
-      Anywhere: '#9B51E0'  // soft purple (special category)
+      'North':              '#78C889',  // soft green
+      'East':               '#E6C45A',  // soft yellow
+      'West':               '#F07A7A',  // soft red
+      'Anywhere in Riyadh': '#9B51E0',  // soft purple
+      'Center':             '#4EC7CC'   // soft teal
     };
 
-    const el = document.getElementById('chart');
-    const chart = echarts.init(el, null, { renderer:'canvas' });
+    const cities = rows.map(r => r[0]);
+    const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
 
-    // Base series style
+    // Build a per-category series with per-point rounded corners only for the top non-zero segment.
+    // For each city, find the highest category index with value > 0.
+    const topIndexByCity = rows.map(r => {
+      const vals = r.slice(1);
+      for (let i = vals.length - 1; i >= 0; i--) {
+        if (vals[i] > 0) return i; // last non-zero index
+      }
+      return -1; // all zeros (unlikely here)
+    });
+
+    // Helper to get array of values for a category index
+    const valuesFor = (catIndex) => rows.map(r => r[1 + catIndex]);
+
+    // Build series array in bottom→top order (same as categories array)
     const baseBar = {
       type: 'bar',
       stack: 'total',
       barWidth: 22,
       itemStyle: { borderRadius: 0, opacity: 0.9 },
-      emphasis: {           // highlight ONLY the hovered bar segment
+      emphasis: {
         focus: 'self',
         itemStyle: { opacity: 1, shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.45)' }
       },
-      blur: { itemStyle: { opacity: 0.25 } } // dim others
+      blur: { itemStyle: { opacity: 0.25 } }
     };
 
+    const series = categories.map((cat, catIdx) => {
+      const vals = valuesFor(catIdx);
+      // For each city point, add rounded corners only if this category is the top non-zero segment.
+      const data = vals.map((v, cityIdx) => {
+        const rounded = (topIndexByCity[cityIdx] === catIdx) ? [6,6,0,0] : 0;
+        return { value: v, itemStyle: { color: colors[cat], borderRadius: rounded } };
+      });
+      return { ...baseBar, name: cat, data };
+    });
+
+    // Custom series to draw centered total labels as pills above each column
+    const totalLabelSeries = {
+      name: 'TotalLabels',
+      type: 'custom',
+      silent: true,
+      renderItem: function (params, api) {
+        const idx = params.dataIndex;
+        const x = cities[idx];
+        const y = totals[idx];
+        const pt = api.coord([x, y]);
+        return {
+          type: 'text',
+          x: pt[0],
+          y: pt[1] - 8,
+          style: {
+            text: String(y),
+            textAlign: 'center',
+            textVerticalAlign: 'bottom',
+            fill: '#ffffff',
+            fontFamily: 'DM Sans',
+            fontSize: 12,
+            backgroundColor: 'rgba(0,0,0,0.55)',
+            padding: [2,6],
+            borderRadius: 8
+          },
+          z: 20
+        };
+      },
+      data: totals.map((t, i) => ({ value: [cities[i], t] }))
+    };
+
+    series.push(totalLabelSeries);
+
+    const chart = echarts.init(document.getElementById('chart'), null, { renderer: 'canvas' });
+
     const option = {
-      backgroundColor:'#191919',
+      backgroundColor: '#191919',
       title: {
         text: 'Week 2',
         subtext: 'Aug 25 – Sep 1, 2025',
         left: 'center',
         top: 6,
-        textStyle:   { color:'#ffffff', fontFamily:'DM Sans', fontWeight:'700', fontSize:18 },
-        subtextStyle:{ color:'#cccccc', fontFamily:'DM Sans', fontWeight:'600', fontSize:12, padding:[4,0,0,0] }
+        textStyle:   { color:'#ffffff', fontFamily:'DM Sans', fontWeight:700, fontSize: 20 },
+        subtextStyle:{ color:'#cfcfcf',  fontFamily:'DM Sans', fontWeight:600, fontSize: 12, padding:[6,0,0,0] }
       },
       legend: {
-        data:['North','East','West','Anywhere in Riyadh'],
-        top: 48,
-        textStyle:{ color:'#dddddd', fontFamily:'DM Sans', fontSize:12 },
-        itemWidth:14, itemHeight:8
+        data: categories,
+        top: 58,                    // moved further down to add breathing room under the dates
+        textStyle: { color:'#dddddd', fontFamily:'DM Sans', fontSize: 12 },
+        itemWidth: 14, itemHeight: 8
       },
-      grid: { left:'8%', right:'6%', top:78, bottom:48 }, // space for title + legend
+      grid: { left:'8%', right:'6%', top: 92, bottom: 48 },  // extra top gap for title + sub + legend
       xAxis: {
-        type:'category', data:cities,
-        axisLabel:{ color:'#dddddd', fontFamily:'DM Sans' },
-        axisLine:{ lineStyle:{ color:'#2a2a2a' } }, axisTick:{ show:false }
+        type: 'category',
+        data: cities,
+        axisLabel: { color:'#dddddd', fontFamily:'DM Sans' },
+        axisLine:  { lineStyle: { color: '#2a2a2a' } },
+        axisTick: { show:false }
       },
       yAxis: {
-        type:'value', name:'Requests',
-        nameTextStyle:{ color:'#ffffff', fontFamily:'DM Sans', fontSize:12 },
-        axisLabel:{ color:'#cccccc', fontFamily:'DM Sans' },
-        splitLine:{ lineStyle:{ color:'#2a2a2a' } }, axisLine:{ show:false }, axisTick:{ show:false },
+        type: 'value',
+        name: 'Requests',
+        nameTextStyle: { color:'#ffffff', fontFamily:'DM Sans', fontSize: 12 },
+        axisLabel: { color:'#cccccc', fontFamily:'DM Sans' },
+        splitLine: { lineStyle: { color: '#2a2a2a' } },
+        axisLine: { show:false }, axisTick:{ show:false },
         min: 0
       },
       tooltip: {
-        trigger:'item', // only hovered segment
-        axisPointer:{ type:'none' },
-        backgroundColor:'#1f1f1f',
-        borderColor:'#2c2c2c', borderWidth:1,
-        textStyle:{ color:'#ffffff', fontFamily:'DM Sans' },
-        formatter: p => `${p.name} — ${p.seriesName}<br/><b>${p.value}</b>`
+        trigger: 'item',             // only hovered segment
+        axisPointer: { type:'none' },
+        backgroundColor: '#1f1f1f',
+        borderColor: '#2c2c2c', borderWidth: 1,
+        textStyle: { color:'#ffffff', fontFamily:'DM Sans' },
+        formatter: (p) => `${p.name} — ${p.seriesName}<br/><b>${p.value}</b>`
       },
-      animationDuration: 800, animationEasing: 'quartOut',
-      series: [
-        // stack order bottom->top; only the TOP gets rounded corners so stacks align perfectly
-        { ...baseBar, name:'North', data:north, itemStyle:{ ...baseBar.itemStyle, color:colors.North, borderRadius:0 } },
-        { ...baseBar, name:'East',  data:east,  itemStyle:{ ...baseBar.itemStyle, color:colors.East,  borderRadius:0 } },
-        { ...baseBar, name:'West',  data:west,  itemStyle:{ ...baseBar.itemStyle, color:colors.West,  borderRadius:0 } },
-        { ...baseBar, name:'Anywhere in Riyadh', data:anywhere, itemStyle:{ ...baseBar.itemStyle, color:colors.Anywhere, borderRadius:[6,6,0,0] } },
-
-        // Centered total labels (pill) above each bar using a custom series
-        {
-          name: 'TotalLabels',
-          type: 'custom',
-          silent: true,
-          renderItem: function (params, api) {
-            const idx = params.dataIndex;
-            const xVal = cities[idx];
-            const yVal = totals[idx];
-            const pt = api.coord([xVal, yVal]);
-            return {
-              type: 'text',
-              x: pt[0],
-              y: pt[1] - 8,
-              style: {
-                text: String(yVal),
-                textAlign: 'center',
-                textVerticalAlign: 'bottom',
-                fill: '#ffffff',
-                fontFamily: 'DM Sans',
-                fontSize: 12,
-                backgroundColor: 'rgba(0,0,0,0.55)',
-                padding: [2,6],
-                borderRadius: 8
-              },
-              z: 20
-            };
-          },
-          data: totals.map((t,i)=>({ value:[cities[i], t] }))
-        }
-      ]
+      animationDuration: 800,
+      animationEasing: 'quartOut',
+      series
     };
 
     chart.setOption(option);
