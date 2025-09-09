@@ -3,28 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="color-scheme" content="dark">
-  <title>Week 1 - Stacked Bars</title>
+  <title>Week 1 – Stacked Bars</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
-    :root { --bg:#191919; --grid:#2a2a2a; --fg:#e8e8e8; }
+    :root { --bg:#191919; }
     html, body { height:100%; margin:0; background:var(--bg); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
     .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
-    .box  { width:100%; max-width:760px; }
-    h2 { color:#fff; font-size:18px; font-weight:500; margin:0 0 10px 6px; }
-    #chart { width:100%; height:420px; }
+    .box  { width:100%; max-width:680px; }           /* smaller width */
+    #chart { width:100%; height:360px; }             /* smaller height */
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="box">
-      <h2>Week 1</h2>
       <div id="chart"></div>
     </div>
   </div>
 
   <script>
-    // ----- Data: city, North, South, East, West
+    // Data: [City, North, South, East, West]
     const rows = [
       ['Riyadh', 6, 3, 2, 1],
       ['Jeddah', 5, 2, 3, 2],
@@ -33,115 +31,73 @@
       ['Arar',   1, 1, 1, 0],
     ];
 
-    const cities = rows.map(r => r[0]);
-    const north  = rows.map(r => r[1]);
-    const south  = rows.map(r => r[2]);
-    const east   = rows.map(r => r[3]);
-    const west   = rows.map(r => r[4]);
-    const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
+    const cities = rows.map(r=>r[0]);
+    const north  = rows.map(r=>r[1]);
+    const south  = rows.map(r=>r[2]);
+    const east   = rows.map(r=>r[3]);
+    const west   = rows.map(r=>r[4]);
+    const totals = rows.map(r=>r.slice(1).reduce((a,b)=>a+b,0));
 
-    // Softer distinct palette for directions
-    const colorNorth = '#78C889';
-    const colorSouth = '#6FA8FF';
-    const colorEast  = '#E6C45A';
-    const colorWest  = '#F07A7A';
+    const colors = {
+      North:'#78C889', South:'#6FA8FF', East:'#E6C45A', West:'#F07A7A'
+    };
 
     const el = document.getElementById('chart');
-    const chart = echarts.init(el, null, { renderer: 'canvas' });
+    const chart = echarts.init(el, null, { renderer:'canvas' });
 
     const option = {
-      backgroundColor: '#191919',
-      grid: { left: '8%', right: '6%', top: 40, bottom: 60 },
+      backgroundColor:'#191919',
+      title: { text:'Week 1', left:'center', top:4, textStyle:{ color:'#fff', fontFamily:'DM Sans', fontWeight:500, fontSize:18 }},
+      grid: { left:'8%', right:'6%', top:44, bottom:50 },
       legend: {
-        data: ['North','South','East','West'],
-        top: 0,
-        textStyle: { color: '#dddddd', fontFamily: 'DM Sans', fontSize: 13 },
-        itemWidth: 16, itemHeight: 10
+        data:['North','South','East','West'],
+        top:8, right:'6%',
+        textStyle:{ color:'#dddddd', fontFamily:'DM Sans', fontSize:12 },
+        itemWidth:14, itemHeight:8
       },
       xAxis: {
-        type: 'category',
-        data: cities,
-        axisLabel: { color: '#dddddd', fontFamily: 'DM Sans' },
-        axisLine: { lineStyle: { color: '#2a2a2a' } },
-        axisTick: { show: false }
+        type:'category', data:cities,
+        axisLabel:{ color:'#dddddd', fontFamily:'DM Sans' },
+        axisLine:{ lineStyle:{ color:'#2a2a2a' } }, axisTick:{ show:false }
       },
       yAxis: {
-        type: 'value',
-        name: 'Requests',
-        nameTextStyle: { color: '#ffffff', fontFamily: 'DM Sans', fontSize: 12 },
-        axisLabel: { color: '#cccccc', fontFamily: 'DM Sans' },
-        splitLine: { lineStyle: { color: '#2a2a2a' } },
-        axisLine: { show: false },
-        axisTick: { show: false }
+        type:'value', name:'Requests',
+        nameTextStyle:{ color:'#ffffff', fontFamily:'DM Sans', fontSize:12 },
+        axisLabel:{ color:'#cccccc', fontFamily:'DM Sans' },
+        splitLine:{ lineStyle:{ color:'#2a2a2a' } }, axisLine:{ show:false }, axisTick:{ show:false }
       },
       tooltip: {
-        trigger: 'item',
-        backgroundColor: '#1f1f1f',
-        borderColor: '#2c2c2c',
-        borderWidth: 1,
-        textStyle: { color: '#ffffff', fontFamily: 'DM Sans' },
-        formatter: (p) => {
-          // p.name = city, p.seriesName = direction, p.value = count
-          return `${p.name} — ${p.seriesName}<br/><b>${p.value}</b>`;
-        }
+        trigger:'item',                 // only the hovered segment
+        axisPointer:{ type:'none' },
+        backgroundColor:'#1f1f1f',
+        borderColor:'#2c2c2c', borderWidth:1,
+        textStyle:{ color:'#ffffff', fontFamily:'DM Sans' },
+        formatter: p => `${p.name} — ${p.seriesName}<br/><b>${p.value}</b>`
       },
-      color: [colorNorth, colorSouth, colorEast, colorWest],
-      animationDuration: 900,
-      animationEasing: 'quartOut',
+      color: [colors.North, colors.South, colors.East, colors.West],
+      animationDuration: 900, animationEasing: 'quartOut',
       series: [
+        { name:'North', type:'bar', stack:'total', data:north, barWidth:22, itemStyle:{ borderRadius:[4,4,0,0] } },
+        { name:'South', type:'bar', stack:'total', data:south, barWidth:22, itemStyle:{ borderRadius:[4,4,0,0] } },
+        { name:'East',  type:'bar', stack:'total', data:east,  barWidth:22, itemStyle:{ borderRadius:[4,4,0,0] } },
+        { name:'West',  type:'bar', stack:'total', data:west,  barWidth:22, itemStyle:{ borderRadius:[4,4,0,0] } },
+
+        // Clean totals above each column (overlay series, no tooltip)
         {
-          name: 'North',
-          type: 'bar',
-          stack: 'total',
-          emphasis: { focus: 'series' },
-          data: north,
-          barWidth: 28,
-          itemStyle: { borderRadius: [4,4,0,0] }
-        },
-        {
-          name: 'South',
-          type: 'bar',
-          stack: 'total',
-          emphasis: { focus: 'series' },
-          data: south,
-          barWidth: 28,
-          itemStyle: { borderRadius: [4,4,0,0] }
-        },
-        {
-          name: 'East',
-          type: 'bar',
-          stack: 'total',
-          emphasis: { focus: 'series' },
-          data: east,
-          barWidth: 28,
-          itemStyle: { borderRadius: [4,4,0,0] }
-        },
-        {
-          name: 'West',
-          type: 'bar',
-          stack: 'total',
-          emphasis: { focus: 'series' },
-          data: west,
-          barWidth: 28,
-          itemStyle: { borderRadius: [4,4,0,0] }
-        },
-        // Transparent overlay to show totals on top of each stack
-        {
-          name: 'Total',
-          type: 'bar',
-          stack: 'total',
+          name:'TotalLabels',
+          type:'bar',
           data: totals,
-          barWidth: 28,
-          itemStyle: { color: 'transparent' },
+          barWidth: 1,
+          z: 10,
+          tooltip: { show:false },
+          itemStyle: { color:'transparent' },
           label: {
-            show: true,
-            position: 'top',
-            formatter: (p) => `${totals[p.dataIndex]}`,
-            color: '#ffffff',
-            fontFamily: 'DM Sans',
-            fontSize: 12
+            show:true, position:'top', distance:6,
+            formatter: p => `${totals[p.dataIndex]}`,
+            color:'#ffffff', fontFamily:'DM Sans', fontSize:12
           },
-          tooltip: { show: false } // no tooltip for the overlay
+          // align with columns by fully overlapping
+          barGap:'-100%'
         }
       ]
     };
