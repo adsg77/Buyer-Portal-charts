@@ -3,125 +3,151 @@
 <head>
   <meta charset="utf-8" />
   <meta name="color-scheme" content="dark">
+  <title>Week 1 - Stacked Bars</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500&display=swap" rel="stylesheet">
-  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
-    body {
-      background-color: #191919;
-      margin: 0;
-      font-family: 'DM Sans', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      height: 100vh;
-    }
-    h2 {
-      color: #fff;
-      font-size: 18px;
-      font-weight: 500;
-      margin-bottom: 12px;
-    }
-    #chart {
-      width: 700px;
-      height: 400px;
-    }
+    :root { --bg:#191919; --grid:#2a2a2a; --fg:#e8e8e8; }
+    html, body { height:100%; margin:0; background:var(--bg); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
+    .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .box  { width:100%; max-width:760px; }
+    h2 { color:#fff; font-size:18px; font-weight:500; margin:0 0 10px 6px; }
+    #chart { width:100%; height:420px; }
   </style>
 </head>
 <body>
-  <h2>Week 1</h2>
-  <div id="chart"></div>
+  <div class="wrap">
+    <div class="box">
+      <h2>Week 1</h2>
+      <div id="chart"></div>
+    </div>
+  </div>
 
   <script>
-    google.charts.load("current", { packages: ["corechart"] });
-    google.charts.setOnLoadCallback(drawChart);
+    // ----- Data: city, North, South, East, West
+    const rows = [
+      ['Riyadh', 6, 3, 2, 1],
+      ['Jeddah', 5, 2, 3, 2],
+      ['Dammam', 7, 1, 3, 2],
+      ['Jubail', 2, 1, 1, 0],
+      ['Arar',   1, 1, 1, 0],
+    ];
 
-    function drawChart() {
-      // city, North, South, East, West
-      const rawData = [
-        ["Riyadh", 6, 3, 2, 1],
-        ["Jeddah", 5, 2, 3, 2],
-        ["Dammam", 7, 1, 3, 2],
-        ["Jubail", 2, 1, 1, 0],
-        ["Arar",   1, 1, 1, 0]
-      ];
+    const cities = rows.map(r => r[0]);
+    const north  = rows.map(r => r[1]);
+    const south  = rows.map(r => r[2]);
+    const east   = rows.map(r => r[3]);
+    const west   = rows.map(r => r[4]);
+    const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
 
-      // Colors for North/South/East/West
-      const colors = ["#78C889", "#6FA8FF", "#E6C45A", "#F07A7A"];
+    // Softer distinct palette for directions
+    const colorNorth = '#78C889';
+    const colorSouth = '#6FA8FF';
+    const colorEast  = '#E6C45A';
+    const colorWest  = '#F07A7A';
 
-      // Build DataTable with HTML tooltips
-      const data = new google.visualization.DataTable();
-      data.addColumn("string", "City");
-      data.addColumn("number", "North");
-      data.addColumn({ type: "string", role: "tooltip", p: { html: true } });
-      data.addColumn("number", "South");
-      data.addColumn({ type: "string", role: "tooltip", p: { html: true } });
-      data.addColumn("number", "East");
-      data.addColumn({ type: "string", role: "tooltip", p: { html: true } });
-      data.addColumn("number", "West");
-      data.addColumn({ type: "string", role: "tooltip", p: { html: true } });
-      data.addColumn({ type: "string", role: "annotation" }); // total annotation
+    const el = document.getElementById('chart');
+    const chart = echarts.init(el, null, { renderer: 'canvas' });
 
-      rawData.forEach(row => {
-        const [city, n, s, e, w] = row;
-        const total = n + s + e + w;
-
-        const makeTooltip = (label, value, color) => `
-          <div style="padding:8px 10px;background:#1f1f1f;border:1px solid #2c2c2c;border-radius:8px;color:#fff;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-              <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${color};"></span>
-              <strong>${city} – ${label}</strong>
-            </div>
-            <div>${value} of ${total}</div>
-            <div style="opacity:.8;">${((value/total)*100).toFixed(1)}%</div>
-          </div>
-        `;
-
-        data.addRow([
-          city,
-          n, makeTooltip("North", n, colors[0]),
-          s, makeTooltip("South", s, colors[1]),
-          e, makeTooltip("East",  e, colors[2]),
-          w, makeTooltip("West",  w, colors[3]),
-          String(total) // annotation
-        ]);
-      });
-
-      const options = {
-        backgroundColor: "#191919",
-        isStacked: true,
-        animation: { startup: true, duration: 900, easing: "out" },
-        legend: {
-          position: "top",
-          textStyle: { color: "#DDDDDD", fontName: "DM Sans", fontSize: 13 }
-        },
-        tooltip: { isHtml: true },
-        vAxis: {
-          title: "Requests",
-          textStyle: { color: "#CCCCCC", fontName: "DM Sans" },
-          titleTextStyle: { color: "#FFFFFF", fontSize: 12, fontName: "DM Sans" },
-          gridlines: { color: "#2a2a2a" },
-          baselineColor: "#2a2a2a",
-          viewWindow: { min: 0 }
-        },
-        hAxis: {
-          textStyle: { color: "#DDDDDD", fontName: "DM Sans" }
-        },
-        chartArea: { left: "10%", top: "10%", width: "80%", height: "70%" },
-        colors: colors,
-        bar: { groupWidth: "60%" },
-        annotations: {
-          textStyle: { color: "#FFFFFF", fontName: "DM Sans", fontSize: 12 },
-          alwaysOutside: true
+    const option = {
+      backgroundColor: '#191919',
+      grid: { left: '8%', right: '6%', top: 40, bottom: 60 },
+      legend: {
+        data: ['North','South','East','West'],
+        top: 0,
+        textStyle: { color: '#dddddd', fontFamily: 'DM Sans', fontSize: 13 },
+        itemWidth: 16, itemHeight: 10
+      },
+      xAxis: {
+        type: 'category',
+        data: cities,
+        axisLabel: { color: '#dddddd', fontFamily: 'DM Sans' },
+        axisLine: { lineStyle: { color: '#2a2a2a' } },
+        axisTick: { show: false }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Requests',
+        nameTextStyle: { color: '#ffffff', fontFamily: 'DM Sans', fontSize: 12 },
+        axisLabel: { color: '#cccccc', fontFamily: 'DM Sans' },
+        splitLine: { lineStyle: { color: '#2a2a2a' } },
+        axisLine: { show: false },
+        axisTick: { show: false }
+      },
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: '#1f1f1f',
+        borderColor: '#2c2c2c',
+        borderWidth: 1,
+        textStyle: { color: '#ffffff', fontFamily: 'DM Sans' },
+        formatter: (p) => {
+          // p.name = city, p.seriesName = direction, p.value = count
+          return `${p.name} — ${p.seriesName}<br/><b>${p.value}</b>`;
         }
-      };
+      },
+      color: [colorNorth, colorSouth, colorEast, colorWest],
+      animationDuration: 900,
+      animationEasing: 'quartOut',
+      series: [
+        {
+          name: 'North',
+          type: 'bar',
+          stack: 'total',
+          emphasis: { focus: 'series' },
+          data: north,
+          barWidth: 28,
+          itemStyle: { borderRadius: [4,4,0,0] }
+        },
+        {
+          name: 'South',
+          type: 'bar',
+          stack: 'total',
+          emphasis: { focus: 'series' },
+          data: south,
+          barWidth: 28,
+          itemStyle: { borderRadius: [4,4,0,0] }
+        },
+        {
+          name: 'East',
+          type: 'bar',
+          stack: 'total',
+          emphasis: { focus: 'series' },
+          data: east,
+          barWidth: 28,
+          itemStyle: { borderRadius: [4,4,0,0] }
+        },
+        {
+          name: 'West',
+          type: 'bar',
+          stack: 'total',
+          emphasis: { focus: 'series' },
+          data: west,
+          barWidth: 28,
+          itemStyle: { borderRadius: [4,4,0,0] }
+        },
+        // Transparent overlay to show totals on top of each stack
+        {
+          name: 'Total',
+          type: 'bar',
+          stack: 'total',
+          data: totals,
+          barWidth: 28,
+          itemStyle: { color: 'transparent' },
+          label: {
+            show: true,
+            position: 'top',
+            formatter: (p) => `${totals[p.dataIndex]}`,
+            color: '#ffffff',
+            fontFamily: 'DM Sans',
+            fontSize: 12
+          },
+          tooltip: { show: false } // no tooltip for the overlay
+        }
+      ]
+    };
 
-      const chart = new google.visualization.ColumnChart(document.getElementById("chart"));
-      chart.draw(data, options);
-
-      // Redraw on resize
-      window.addEventListener("resize", () => chart.draw(data, options));
-    }
+    chart.setOption(option);
+    window.addEventListener('resize', () => chart.resize());
   </script>
 </body>
 </html>
