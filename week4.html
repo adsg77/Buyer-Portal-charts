@@ -23,7 +23,7 @@
 
   <script>
     // ------------ Week 4 (Sep 8 – Sep 16, 2025) ------------
-    // Fixed category order per row: North, South, West, East, Center, Anywhere in Riyadh
+    // Fixed category order: North, South, West, East, Center, Anywhere in Riyadh
     const rows = [
       // city      N   S   W   E   C   Any
       ['Riyadh',  17,  0,  0,  0,  1,   0],
@@ -34,20 +34,17 @@
     const cities = rows.map(r => r[0]);
     const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
 
-    // Legend order you asked for
     const categories = ['North','South','West','East','Center','Anywhere in Riyadh'];
-
-    // Colors mapped 1:1 with legend & bars
     const colorMap = {
-      'North':              '#78C889', // soft green
-      'South':              '#6FA8FF', // soft blue
-      'West':               '#F07A7A', // soft red
-      'East':               '#E6C45A', // soft yellow
-      'Center':             '#4EC7CC', // soft teal
-      'Anywhere in Riyadh': '#9B51E0'  // soft purple
+      'North':              '#78C889',
+      'South':              '#6FA8FF',
+      'West':               '#F07A7A',
+      'East':               '#E6C45A',
+      'Center':             '#4EC7CC',
+      'Anywhere in Riyadh': '#9B51E0'
     };
 
-    // Which series is the top non-zero segment for each city (for rounded caps)?
+    // which segment is the top non-zero per city (for rounded top)
     const topIndexByCity = rows.map(r => {
       const vals = r.slice(1);
       for (let i = vals.length - 1; i >= 0; i--) if (vals[i] > 0) return i;
@@ -65,41 +62,43 @@
 
     function valuesFor(catIdx){ return rows.map(r => r[1 + catIdx]); }
 
-    // Build series bottom→top in the same order as categories
     const series = categories.map((cat, catIdx) => {
       const vals = valuesFor(catIdx);
       return {
         ...baseBar,
         name: cat,
-        itemStyle: { ...baseBar.itemStyle, color: colorMap[cat] }, // legend color == bars
+        itemStyle: { ...baseBar.itemStyle, color: colorMap[cat] },
         data: vals.map((v, cityIdx) => {
           const isTop = (topIndexByCity[cityIdx] === catIdx);
-          // Only top-most non-zero segment gets rounded top corners
           return isTop ? { value: v, itemStyle: { borderRadius: [6,6,0,0] } } : v;
         })
       };
     });
 
-    // Centered total labels above each column (pill style)
+    // ✅ FIX: totals label anchored to the FULL stack height (not the North bar)
     series.push({
       name: 'TotalLabels',
       type: 'custom',
       silent: true,
       renderItem: (params, api) => {
         const i = params.dataIndex;
-        const pt = api.coord([cities[i], totals[i]]);
+        const total = totals[i];
+        const pt = api.coord([cities[i], total]);
         return {
           type: 'text',
-          x: pt[0], y: pt[1] - 8,
+          x: pt[0],
+          y: pt[1] - 10,                         // a touch more clearance above the stack
           style: {
-            text: String(totals[i]),
+            text: String(total),
             textAlign: 'center',
             textVerticalAlign: 'bottom',
             fill: '#fff',
             fontFamily: 'DM Sans', fontSize: 12,
             backgroundColor: 'rgba(0,0,0,0.55)',
-            padding: [2,6], borderRadius: 8
-          }, z: 20
+            padding: [2,6],
+            borderRadius: 8
+          },
+          z: 20
         };
       },
       data: totals.map((t,i)=>({ value:[cities[i], t] }))
@@ -133,7 +132,10 @@
         nameTextStyle:{ color:'#ffffff', fontFamily:'DM Sans', fontSize:12 },
         axisLabel:{ color:'#cccccc', fontFamily:'DM Sans' },
         splitLine:{ lineStyle:{ color:'#2a2a2a' } },
-        axisLine:{ show:false }, axisTick:{ show:false }, min:0
+        axisLine:{ show:false }, axisTick:{ show:false },
+        min: 0,
+        // a little headroom so the pill never touches the top grid line
+        max: Math.max(...totals) + 2
       },
       tooltip: {
         trigger:'item', axisPointer:{ type:'none' },
