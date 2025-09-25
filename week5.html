@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="color-scheme" content="dark">
-  <title>Week 4 – Stacked Bars</title>
+  <title>Week 5 – Stacked Bars</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
@@ -22,33 +22,37 @@
   </div>
 
   <script>
-    // ------------ Week 4 (Sep 8 – Sep 16, 2025) ------------
-    // Fixed category order: North, South, West, East, Center, Anywhere in Riyadh
+    // ---------------- Week 5 data (Beds) ----------------
+    // City rows in fixed category order: North, South, West, East, Center, Anywhere
     const rows = [
-      // city      N   S   W   E   C   Any
-      ['Riyadh',  834,  3,  150,  1,  6,   0],
+      // city      N    S  W    E  C  Any
+      ['Riyadh',  834,  3, 150,  1,  6,  0]
     ];
 
     const cities = rows.map(r => r[0]);
     const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
 
+    // Category order: North, South, West, East, Center, Anywhere
     const categories = ['North','South','West','East','Center','Anywhere'];
+
+    // Colors (legend ⟷ bars 1:1) — unchanged
     const colorMap = {
-      'North':              '#78C889',
-      'South':              '#6FA8FF',
-      'West':               '#F07A7A',
-      'East':               '#E6C45A',
-      'Center':             '#4EC7CC',
-      'Anywhere': '#9B51E0'
+      'North':    '#78C889', // soft green
+      'South':    '#6FA8FF', // soft blue
+      'West':     '#F07A7A', // soft red
+      'East':     '#E6C45A', // soft yellow
+      'Center':   '#4EC7CC', // soft teal
+      'Anywhere': '#9B51E0'  // soft purple
     };
 
-    // which segment is the top non-zero per city (for rounded top)
+    // For each city, which category is the top non-zero segment?
     const topIndexByCity = rows.map(r => {
       const vals = r.slice(1);
       for (let i = vals.length - 1; i >= 0; i--) if (vals[i] > 0) return i;
       return -1;
     });
 
+    // Build series bottom→top in the same order as categories.
     const baseBar = {
       type: 'bar',
       stack: 'total',
@@ -67,42 +71,38 @@
         name: cat,
         itemStyle: { ...baseBar.itemStyle, color: colorMap[cat] },
         data: vals.map((v, cityIdx) => {
-          const isTop = (topIndexByCity[cityIdx] === catIdx);
-          return isTop ? { value: v, itemStyle: { borderRadius: [6,6,0,0] } } : v;
+          const top = (topIndexByCity[cityIdx] === catIdx);
+          return top ? { value: v, itemStyle: { borderRadius: [6,6,0,0] } } : v;
         })
       };
     });
 
-    // ✅ FIX: totals label anchored to the FULL stack height (not the North bar)
+    // Centered total labels (pill) above each column
     series.push({
       name: 'TotalLabels',
       type: 'custom',
       silent: true,
       renderItem: (params, api) => {
         const i = params.dataIndex;
-        const total = totals[i];
-        const pt = api.coord([cities[i], total]);
+        const pt = api.coord([cities[i], totals[i]]);
         return {
           type: 'text',
-          x: pt[0],
-          y: pt[1] - 10,                         // a touch more clearance above the stack
+          x: pt[0], y: pt[1] - 8,
           style: {
-            text: String(total),
+            text: String(totals[i]),
             textAlign: 'center',
             textVerticalAlign: 'bottom',
             fill: '#fff',
             fontFamily: 'DM Sans', fontSize: 12,
             backgroundColor: 'rgba(0,0,0,0.55)',
-            padding: [2,6],
-            borderRadius: 8
-          },
-          z: 20
+            padding: [2,6], borderRadius: 8
+          }, z: 20
         };
       },
       data: totals.map((t,i)=>({ value:[cities[i], t] }))
     });
 
-    const chart = echarts.init(document.getElementById('chart'));
+    const chart = echarts.init(document.getElementById('chart'), null, { renderer:'canvas' });
 
     const option = {
       backgroundColor:'#191919',
@@ -126,14 +126,12 @@
         axisLine:{ lineStyle:{ color:'#2a2a2a' } }, axisTick:{ show:false }
       },
       yAxis: {
-        type:'value', name:'Requests',
+        type:'value', name:'Beds',
         nameTextStyle:{ color:'#ffffff', fontFamily:'DM Sans', fontSize:12 },
         axisLabel:{ color:'#cccccc', fontFamily:'DM Sans' },
         splitLine:{ lineStyle:{ color:'#2a2a2a' } },
-        axisLine:{ show:false }, axisTick:{ show:false },
-        min: 0,
-        // a little headroom so the pill never touches the top grid line
-        max: Math.max(...totals) + 2
+        axisLine:{ show:false }, axisTick:{ show:false }, min:0,
+        max: 1100
       },
       tooltip: {
         trigger:'item', axisPointer:{ type:'none' },
