@@ -11,7 +11,7 @@
     html, body { height:100%; margin:0; background:var(--bg); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
     .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
     .box  { width:100%; max-width:650px; }
-    #chart { width:100%; height:340px; }
+    #chart { width:100%; height:340px; }   /* same size as the other weeks */
   </style>
 </head>
 <body>
@@ -24,26 +24,26 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // ---------- Week 5 (Beds) ----------
-      // Order: North, South, West, East, Center, Anywhere in Riyadh
+      // Fixed legend/series order: North, South, West, East, Center, Anywhere in Riyadh
       const rows = [
-        // city      N    S  W    E  C   Any
-        ['Riyadh',  834, 3, 150, 1, 6,  0]
+        // city      N    S   W    E   C   Any
+        ['Riyadh',  834,  3, 150,  1,  6,   0]
       ];
 
       const categories = ['North','South','West','East','Center','Anywhere in Riyadh'];
       const colors = {
-        'North':              '#78C889', // green
-        'South':              '#6FA8FF', // blue
-        'West':               '#F07A7A', // red
-        'East':               '#E6C45A', // yellow
-        'Center':             '#4EC7CC', // teal
-        'Anywhere in Riyadh': '#9B51E0'  // purple
+        'North':              '#78C889', // (same as previous weeks)
+        'South':              '#6FA8FF',
+        'West':               '#F07A7A',
+        'East':               '#E6C45A',
+        'Center':             '#4EC7CC',
+        'Anywhere': '#9B51E0'
       };
 
       const cities = rows.map(r => r[0]);
       const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0)); // -> [994]
 
-      // Find the top non-zero category index per city (to round only that cap)
+      // Identify top non-zero segment per city so only that cap is rounded (same behavior)
       const topIndexByCity = rows.map(r => {
         const vals = r.slice(1);
         for (let i = vals.length - 1; i >= 0; i--) if (vals[i] > 0) return i;
@@ -61,29 +61,23 @@
 
       function valuesFor(catIdx){ return rows.map(r => r[1 + catIdx]); }
 
-      // Build series bottom→top. IMPORTANT FIX:
-      // give EACH point its own itemStyle with the color,
-      // and add borderRadius only for the true top segment.
+      // Build series bottom→top in the exact legend order
       const series = categories.map((cat, catIdx) => {
         const vals = valuesFor(catIdx);
         return {
           ...baseBar,
           name: cat,
-          // keep series-level itemStyle simple; color per-point below
+          // keep colors identical to earlier weeks
+          itemStyle: { ...baseBar.itemStyle, color: colors[cat] },
           data: vals.map((v, cityIdx) => {
             const isTop = (topIndexByCity[cityIdx] === catIdx);
-            return {
-              value: v,
-              itemStyle: {
-                color: colors[cat],
-                borderRadius: isTop ? [8,8,0,0] : 0   // ← rounded cap like the “13” column
-              }
-            };
+            // only the true top segment gets the rounded top (same look as Week 2/3/4)
+            return isTop ? { value: v, itemStyle: { borderRadius: [6,6,0,0] } } : v;
           })
         };
       });
 
-      // Total pill above the full stack
+      // Centered total pill above the full stack (same style)
       series.push({
         name: 'TotalLabels',
         type: 'custom',
@@ -103,13 +97,15 @@
               fontFamily: 'DM Sans', fontSize: 12,
               backgroundColor: 'rgba(0,0,0,0.55)',
               padding: [2,6], borderRadius: 8
-            }, z: 20
+            },
+            z: 20
           };
         },
         data: totals.map((t,i)=>({ value:[cities[i], t] }))
       });
 
-      const chart = echarts.init(document.getElementById('chart'), null, { renderer: 'svg' });
+      const chart = echarts.init(document.getElementById('chart'), null, { renderer: 'svg' }); // same renderer we’ve been using
+
       chart.setOption({
         backgroundColor:'#191919',
         title: {
@@ -138,7 +134,7 @@
           splitLine:{ lineStyle:{ color:'#2a2a2a' } },
           axisLine:{ show:false }, axisTick:{ show:false },
           min: 0,
-          max: 1100
+          max: 1100   // small headroom above 994 like before
         },
         tooltip: {
           trigger:'item', axisPointer:{ type:'none' },
@@ -149,6 +145,7 @@
         animationDuration: 800, animationEasing: 'quartOut',
         series
       });
+
       window.addEventListener('resize', () => chart.resize());
     });
   </script>
