@@ -24,11 +24,10 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // ---------- Week 5 (Beds) ----------
-      // Legend & series order: North, South, West, East, Center, Anywhere in Riyadh
-      // City: Riyadh only, with bed counts you provided
+      // Order: North, South, West, East, Center, Anywhere in Riyadh
       const rows = [
-        // city      N    S   W    E   C   Any
-        ['Riyadh',  834,  3, 150,  1,  6,   0]
+        // city      N    S  W    E  C   Any
+        ['Riyadh',  834, 3, 150, 1, 6,  0]
       ];
 
       const categories = ['North','South','West','East','Center','Anywhere in Riyadh'];
@@ -44,7 +43,7 @@
       const cities = rows.map(r => r[0]);
       const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0)); // -> [994]
 
-      // Find top non-zero segment per city → only that segment gets rounded cap
+      // Find the top non-zero category index per city (to round only that cap)
       const topIndexByCity = rows.map(r => {
         const vals = r.slice(1);
         for (let i = vals.length - 1; i >= 0; i--) if (vals[i] > 0) return i;
@@ -62,16 +61,24 @@
 
       function valuesFor(catIdx){ return rows.map(r => r[1 + catIdx]); }
 
-      // Build bar series in the legend order
+      // Build series bottom→top. IMPORTANT FIX:
+      // give EACH point its own itemStyle with the color,
+      // and add borderRadius only for the true top segment.
       const series = categories.map((cat, catIdx) => {
         const vals = valuesFor(catIdx);
         return {
           ...baseBar,
           name: cat,
-          itemStyle: { ...baseBar.itemStyle, color: colors[cat] }, // legend color = bars
+          // keep series-level itemStyle simple; color per-point below
           data: vals.map((v, cityIdx) => {
             const isTop = (topIndexByCity[cityIdx] === catIdx);
-            return isTop ? { value: v, itemStyle: { borderRadius: [6,6,0,0] } } : v;
+            return {
+              value: v,
+              itemStyle: {
+                color: colors[cat],
+                borderRadius: isTop ? [8,8,0,0] : 0   // ← rounded cap like the “13” column
+              }
+            };
           })
         };
       });
@@ -96,16 +103,14 @@
               fontFamily: 'DM Sans', fontSize: 12,
               backgroundColor: 'rgba(0,0,0,0.55)',
               padding: [2,6], borderRadius: 8
-            },
-            z: 20
+            }, z: 20
           };
         },
         data: totals.map((t,i)=>({ value:[cities[i], t] }))
       });
 
       const chart = echarts.init(document.getElementById('chart'), null, { renderer: 'svg' });
-
-      const option = {
+      chart.setOption({
         backgroundColor:'#191919',
         title: {
           text: 'Week 5',
@@ -133,7 +138,7 @@
           splitLine:{ lineStyle:{ color:'#2a2a2a' } },
           axisLine:{ show:false }, axisTick:{ show:false },
           min: 0,
-          max: 1100 // headroom above 994 so the pill never collides
+          max: 1100
         },
         tooltip: {
           trigger:'item', axisPointer:{ type:'none' },
@@ -143,9 +148,7 @@
         },
         animationDuration: 800, animationEasing: 'quartOut',
         series
-      };
-
-      chart.setOption(option);
+      });
       window.addEventListener('resize', () => chart.resize());
     });
   </script>
