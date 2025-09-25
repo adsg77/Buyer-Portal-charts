@@ -34,14 +34,14 @@
     const cities = rows.map(r => r[0]);
     const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
 
-    const categories = ['North','South','West','East','Center','Anywhere in Riyadh'];
+    const categories = ['North','South','West','East','Center','Anywhere'];
     const colorMap = {
       'North':              '#78C889',
       'South':              '#6FA8FF',
       'West':               '#F07A7A',
       'East':               '#E6C45A',
       'Center':             '#4EC7CC',
-      'Anywhere in Riyadh': '#9B51E0'
+      'Anywhere': '#9B51E0'
     };
 
     // which segment is the top non-zero per city (for rounded top)
