@@ -3,18 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="color-scheme" content="dark">
-  <title>Week 5 – Requests & Beds</title>
+  <title>Week 5 – Requests/Beds (Toggle)</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
-    :root { --bg:#191919; }
+    :root { --bg:#191919; --fg:#e8e8e8; --muted:#cfcfcf; --grid:#2a2a2a; }
     html, body { height:100%; margin:0; background:var(--bg); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
-    .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .wrap { min-height:100%; display:flex; align-items:flex-start; justify-content:center; padding:16px; }
     .box  { width:100%; max-width:650px; }
-    .title { text-align:center; color:#fff; font-weight:700; font-size:20px; margin:6px 0 2px; }
-    .subtitle { text-align:center; color:#cfcfcf; font-weight:600; font-size:12px; margin:0 0 10px; }
-    #chartReq, #chartBeds { width:100%; height:320px; }
-    .spacer { height:12px; }
+    .title    { text-align:center; color:#fff; font-weight:700; font-size:20px; margin:6px 0 2px; }
+    .subtitle { text-align:center; color:var(--muted); font-weight:600; font-size:12px; margin:0 0 8px; }
+    .toolbar { display:flex; justify-content:center; gap:8px; margin-bottom:8px; }
+    .btn {
+      background:#242424; color:#ddd; border:1px solid #333; border-radius:8px; padding:6px 10px;
+      font-size:12px; font-weight:600; cursor:pointer;
+    }
+    .btn.active { background:#2f2f2f; color:#fff; border-color:#3a3a3a; }
+    #chart { width:100%; height:340px; }
   </style>
 </head>
 <body>
@@ -22,26 +27,20 @@
     <div class="box">
       <div class="title">Week 5</div>
       <div class="subtitle">Sep 16 – Sep 23, 2025</div>
-      <div id="chartReq"></div>
-      <div class="spacer"></div>
-      <div id="chartBeds"></div>
+
+      <!-- Toggle -->
+      <div class="toolbar">
+        <button id="btnReq" class="btn active">Requests (total 14)</button>
+        <button id="btnBeds" class="btn">Beds (total 994)</button>
+      </div>
+
+      <div id="chart"></div>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      // ---------- Week 5 data ----------
-      // Fixed category order: North, South, West, East, Center, Anywhere in Riyadh
-      // City: Riyadh only (others zero to keep palette consistent)
-      const rowsRequests = [
-        // city      N  S  W  E  C  Any
-        ['Riyadh',  8, 1, 1, 1, 3,  0]
-      ];
-      const rowsBeds = [
-        // city      N    S  W    E  C  Any
-        ['Riyadh',  834, 3, 150, 1, 6,  0]
-      ];
-
+    document.addEventListener('DOMContentLoaded', () => {
+      // Fixed category order across all charts
       const categories = ['North','South','West','East','Center','Anywhere in Riyadh'];
       const colorMap = {
         'North':              '#78C889',
@@ -52,11 +51,24 @@
         'Anywhere in Riyadh': '#9B51E0'
       };
 
-      function buildChart(elId, rows, yLabel, showLegend) {
+      // Week 5 data — Riyadh only (others 0 to keep palette consistent)
+      const rowsRequests = [
+        // city      N  S  W  E  C  Any
+        ['Riyadh',  8, 1, 1, 1, 3,  0]
+      ];
+      const rowsBeds = [
+        // city      N    S  W    E  C  Any
+        ['Riyadh',  834, 3, 150, 1, 6,  0]
+      ];
+
+      const el = document.getElementById('chart');
+      const chart = echarts.init(el, null, { renderer: 'svg' });
+
+      function buildOption(rows, yLabel, showLegend) {
         const cities = rows.map(r => r[0]);
         const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
 
-        // which series is the top non-zero segment for each city (for rounded caps)?
+        // For rounded caps: figure out the top non-zero segment per city
         const topIndexByCity = rows.map(r => {
           const vals = r.slice(1);
           for (let i = vals.length - 1; i >= 0; i--) if (vals[i] > 0) return i;
@@ -74,6 +86,7 @@
 
         function valuesFor(catIdx){ return rows.map(r => r[1 + catIdx]); }
 
+        // Build series bottom→top in the same order as categories
         const series = categories.map((cat, catIdx) => {
           const vals = valuesFor(catIdx);
           return {
@@ -87,7 +100,7 @@
           };
         });
 
-        // Total pill above the full stack (with a little headroom)
+        // Total pill above the full stack height
         series.push({
           name: 'TotalLabels',
           type: 'custom',
@@ -98,8 +111,7 @@
             const pt = api.coord([cities[i], total]);
             return {
               type: 'text',
-              x: pt[0],
-              y: pt[1] - 10,
+              x: pt[0], y: pt[1] - 10,
               style: {
                 text: String(total),
                 textAlign: 'center',
@@ -107,8 +119,7 @@
                 fill: '#fff',
                 fontFamily: 'DM Sans', fontSize: 12,
                 backgroundColor: 'rgba(0,0,0,0.55)',
-                padding: [2,6],
-                borderRadius: 8
+                padding: [2,6], borderRadius: 8
               },
               z: 20
             };
@@ -116,11 +127,8 @@
           data: totals.map((t,i)=>({ value:[cities[i], t] }))
         });
 
-        const el = document.getElementById(elId);
-        const chart = echarts.init(el, null, { renderer: 'svg' }); // SVG for Notion reliability
-
         const maxY = Math.max(...totals);
-        const option = {
+        return {
           backgroundColor:'#191919',
           legend: showLegend ? {
             data: categories,
@@ -143,7 +151,7 @@
             splitLine:{ lineStyle:{ color:'#2a2a2a' } },
             axisLine:{ show:false }, axisTick:{ show:false },
             min: 0,
-            max: maxY + Math.ceil(maxY * 0.1) + 1  // headroom
+            max: maxY + Math.ceil(maxY * 0.1) + 1
           },
           tooltip: {
             trigger:'item', axisPointer:{ type:'none' },
@@ -154,14 +162,29 @@
           animationDuration: 800, animationEasing: 'quartOut',
           series
         };
-
-        chart.setOption(option);
-        window.addEventListener('resize', () => chart.resize());
       }
 
-      // Build both charts
-      buildChart('chartReq',  rowsRequests, 'Requests', true);   // top chart with legend
-      buildChart('chartBeds', rowsBeds,     'Beds',     false);  // bottom chart (legend removed)
+      function showRequests() {
+        chart.setOption(buildOption(rowsRequests, 'Requests', true), true);
+        btnReq.classList.add('active');
+        btnBeds.classList.remove('active');
+      }
+      function showBeds() {
+        chart.setOption(buildOption(rowsBeds, 'Beds', false), true);
+        btnBeds.classList.add('active');
+        btnReq.classList.remove('active');
+      }
+
+      const btnReq  = document.getElementById('btnReq');
+      const btnBeds = document.getElementById('btnBeds');
+      btnReq.addEventListener('click', showRequests);
+      btnBeds.addEventListener('click', showBeds);
+
+      // default view
+      showRequests();
+
+      // responsive
+      window.addEventListener('resize', () => chart.resize());
     });
   </script>
 </body>
