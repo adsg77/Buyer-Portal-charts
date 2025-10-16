@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark">
+  <title>Week 7 – Stacked Bars</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    :root { --bg:#191919; }
+    html, body { height:100%; margin:0; background:var(--bg); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Arial, sans-serif; }
+    .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .box  { width:100%; max-width:650px; }
+    #chart { width:100%; height:340px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="box">
+      <div id="chart"></div>
+    </div>
+  </div>
+
+  <script>
+    // ---------------- Week 7 data (Beds) ----------------
+    // Fixed category order per city: North, South, West, East, Center, Anywhere
+    const rows = [
+      // city       N     S   W    E    C   Any
+      ['Riyadh',  1775,   7,  0,   8,   4,   0],
+      ['Khobar',     1,   0,  0, 150,   0,   0],
+      ['Tabuk',      0,   0, 24,   0,   0,   0],
+      ['Jeddah',     1,   2,  0,   0,  12,   0],
+      ['Dammam',     4,   0,  0,   0,   1,   0],
+    ];
+
+    const cities = rows.map(r => r[0]);
+    const totals = rows.map(r => r.slice(1).reduce((a,b)=>a+b,0));
+
+    // Category order & legend (unchanged)
+    const categories = ['North','South','West','East','Center','Anywhere'];
+
+    // Colors (match earlier weeks exactly)
+    const colorMap = {
+      'North':    '#78C889', // soft green
+      'South':    '#6FA8FF', // soft blue
+      'West':     '#F07A7A', // soft red
+      'East':     '#E6C45A', // soft yellow
+      'Center':   '#4EC7CC', // soft teal
+      'Anywhere': '#9B51E0'  // soft purple
+    };
+
+    // Which segment is top (non-zero) in each city? -> rounded cap there only
+    const topIndexByCity = rows.map(r => {
+      const vals = r.slice(1); // 6 values per city
+      for (let i = vals.length - 1; i >= 0; i--) if (vals[i] > 0) return i;
+      return -1;
+    });
+
+    const baseBar = {
+      type: 'bar',
+      stack: 'total',
+      barWidth: 22,
+      itemStyle: { borderRadius: 0, opacity: 0.9 },
+      emphasis: { focus: 'self', itemStyle: { opacity: 1, shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.45)' } },
+      blur: { itemStyle: { opacity: 0.25 } }
+    };
+
+    function valuesFor(catIdx){ return rows.map(r => r[1 + catIdx]); }
+
+    // Build series bottom→top in legend order
+    const series = categories.map((cat, catIdx) => {
+      const vals = valuesFor(catIdx);
+      return {
+        ...baseBar,
+        name: cat,
+        itemStyle: { ...baseBar.itemStyle, color: colorMap[cat] },
+        data: vals.map((v, cityIdx) => {
+          const top = (topIndexByCity[cityIdx] === catIdx);
+          return top ? { value: v, itemStyle: { borderRadius: [6,6,0,0] } } : v;
+        })
+      };
+    });
+
+    // Total pill above each column
+    series.push({
+      name: 'TotalLabels',
+      type: 'custom',
+      silent: true,
+      renderItem: (params, api) => {
+        const i = params.dataIndex;
+        const pt = api.coord([cities[i], totals[i]]);
+        return {
+          type: 'text',
+          x: pt[0], y: pt[1] - 8,
+          style: {
+            text: String(totals[i]),
+            textAlign: 'center',
+            textVerticalAlign: 'bottom',
+            fill: '#fff',
+            fontFamily: 'DM Sans', fontSize: 12,
+            backgroundColor: 'rgba(0,0,0,0.55)',
+            padding: [2,6], borderRadius: 8
+          }, z: 20
+        };
+      },
+      data: totals.map((t,i)=>({ value:[cities[i], t] }))
+    });
+
+    const chart = echarts.init(document.getElementById('chart'), null, { renderer:'canvas' });
+
+    const option = {
+      backgroundColor:'#191919',
+      title: {
+        text: 'Week 7',
+        subtext: 'Oct 5 – Oct 15, 2025',
+        left: 'center', top: 6,
+        textStyle:   { color:'#fff', fontFamily:'DM Sans', fontWeight:700, fontSize:20 },
+        subtextStyle:{ color:'#cfcfcf', fontFamily:'DM Sans', fontWeight:600, fontSize:12, padding:[8,0,0,0] }
+      },
+      legend: {
+        data: categories,
+        top: 66,
+        textStyle: { color:'#dddddd', fontFamily:'DM Sans', fontSize:12 },
+        itemWidth:14, itemHeight:8
+      },
+      grid: { left:'8%', right:'6%', top: 98, bottom: 48 },
+      xAxis: {
+        type:'category', data:cities,
+        axisLabel:{ color:'#dddddd', fontFamily:'DM Sans' },
+        axisLine:{ lineStyle:{ color:'#2a2a2a' } }, axisTick:{ show:false }
+      },
+      yAxis: {
+        type:'value', name:'Beds',
+        nameTextStyle:{ color:'#ffffff', fontFamily:'DM Sans', fontSize:12 },
+        axisLabel:{ color:'#cccccc', fontFamily:'DM Sans' },
+        splitLine:{ lineStyle:{ color:'#2a2a2a' } },
+        axisLine:{ show:false }, axisTick:{ show:false }, min:0,
+        max: Math.max(...totals) + Math.ceil(Math.max(...totals) * 0.1) // headroom
+      },
+      tooltip: {
+        trigger:'item', axisPointer:{ type:'none' },
+        backgroundColor:'#1f1f1f', borderColor:'#2c2c2c', borderWidth:1,
+        textStyle:{ color:'#fff', fontFamily:'DM Sans' },
+        formatter: p => `${p.name} — ${p.seriesName}<br/><b>${p.value}</b>`
+      },
+      animationDuration: 800, animationEasing: 'quartOut',
+      series
+    };
+
+    chart.setOption(option);
+    window.addEventListener('resize', () => chart.resize());
+  </script>
+</body>
+</html>
